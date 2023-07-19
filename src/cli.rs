@@ -11,7 +11,7 @@ pub struct Args {
     #[arg(short)]
     pub skip_existing: bool,
 
-    /// Encoding profile to use
+    /// Encoding profile from the config to use
     #[arg(short)]
     pub encoding_profile: Option<String>,
 

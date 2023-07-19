@@ -4,12 +4,13 @@ username = "<your username here>"
 # Spotify password
 password = "<your password here>"
 
-# Default output path.
+# Default output path
 # The following wildcards can be used:
 #   %a - artist
 #   %t - track name
 #   %b - album
 #   %s - track number in download queue
+#   %e - extension from the encoding profile
 output = "./%s. %a - %t.%e"
 
 # Separator between artist names when there are multiple artists
@@ -18,20 +19,46 @@ artists_separator = ", "
 # OPTIONAL: Path to the FFmpeg binary
 #ffpath = "/usr/bin/ffmpeg"
 
-default_profile = "mp3@320"
+# Encoding profiles
+#
+# Here you can define the command-line arguments for ffmpeg to use
+# The "ogg" and "mp3" profiles below are ready to use, but you can add your custom profiles if you want
 
-[profiles.'mp3@320']
+default_profile = "mp3"
+
+[profiles.mp3]
+# Source bitrate, i.e. the quality of the *input*, downloaded from Spotify
+quality = 320
+
+# Whether to include the cover art image as the 2nd stream in FFmpeg
+cover_art = true
+
+# Extension of the output file
+# It can be included in the output path with the %e wildcard
+extension = "mp3"
+
+# FFmpeg command-line arguments
+args = [
+    "-c:a", "libmp3lame",  # MP3 codec
+    "-b:a", "320k",  # 320kbps bitrate
+    "-metadata:s:v", "title=Album Cover",  # cover art metadata
+    "-metadata:s:v", "title=Cover (front)",  # cover art metadata
+    "-metadata", "title=%t",  # song title
+    "-metadata", "artist=%a",  # song artist
+    "-metadata", "album=%b",  # song album
+    "-map", "0:0",  # include the audio stream
+    "-map", "1:0",  # include the video stream (cover art)
+]
+
+# 320kbps OGG straight from Spotify, without transcoding.
+# This profile should have the highest quality possible with Spotify.
+[profiles.ogg]
 quality = 320
 cover_art = true
-extension = "mp3"
+extension = "ogg"
 args = [
-    "-c:a", "libmp3lame",
-    "-b:a", "320k",
-    "-metadata:s:v", "title=Album Cover",
-    "-metadata:s:v", "title=Cover (front)",
-    "-metadata", "title=%t",
-    "-metadata", "artist=%a",
-    "-metadata", "album=%b",
-    "-map", "0:0",
-    "-map", "1:0",
+    "-c:a", "copy",  # no transcoding
+    "-metadata", "title=%t",  # song title
+    "-metadata", "artist=%a",  # song artist
+    "-metadata", "album=%b",  # song album
 ]
