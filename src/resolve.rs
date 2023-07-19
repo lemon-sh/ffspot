@@ -8,7 +8,7 @@ use librespot::{
 async fn resolve_track(session: &Session, id: &SpotifyId) -> Result<Track> {
     let track = Track::get(session, id).await?;
     if let Some(alternative) = track.alternatives.first() {
-        Ok(Track::get(session, &alternative).await?)
+        Ok(Track::get(session, alternative).await?)
     } else {
         Ok(track)
     }
