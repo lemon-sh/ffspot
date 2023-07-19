@@ -91,6 +91,7 @@ pub async fn download(
     let seq_digits = track_count.to_string().len();
 
     let ffpath = Arc::new(OsString::from(cfg.ffpath));
+    let spclient = session.spclient();
 
     for (mut seq, track) in tracks.into_iter().enumerate() {
         seq += 1;
@@ -160,12 +161,9 @@ pub async fn download(
             ));
             covers.sort_unstable_by_key(|i| i.width * i.height);
             let cover_id = covers.last().unwrap().id;
-            let cover_url = format!("https://i.scdn.co/image/{cover_id}");
-            let mut cover_resp = reqwest::get(cover_url).await?.error_for_status()?;
+            let cover_data = spclient.get_image(&cover_id).await?;
             let mut cover_file = TempFile::new().await?;
-            while let Some(chunk) = cover_resp.chunk().await? {
-                cover_file.write_all(&chunk).await?;
-            }
+            cover_file.write_all(&cover_data).await?;
             ffargs.push("-i".into());
             ffargs.push(cover_file.file_path().to_string_lossy().into_owned().into());
             _cover = Some(cover_file);
