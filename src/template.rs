@@ -63,7 +63,7 @@ impl Template {
                 Component::Number => {
                     let (seq, seq_digits) = (fields.seq, fields.seq_digits);
                     write!(output, "{seq:0seq_digits$}")?;
-                },
+                }
                 Component::Extension => output.push_str(fields.extension),
             };
         }

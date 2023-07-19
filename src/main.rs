@@ -97,7 +97,7 @@ async fn main() -> Result<()> {
         session,
         config,
         cli.skip_existing,
-        cli.encoding_profile.as_deref()
+        cli.encoding_profile.as_deref(),
     )
     .await?;
 
