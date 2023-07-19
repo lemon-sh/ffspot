@@ -1,0 +1,37 @@
+# Spotify username or e-mail
+username = "<your username here>"
+
+# Spotify password
+password = "<your password here>"
+
+# Default output path.
+# The following wildcards can be used:
+#   %a - artist
+#   %t - track name
+#   %b - album
+#   %s - track number in download queue
+output = "./%s. %a - %t.%e"
+
+# Separator between artist names when there are multiple artists
+artists_separator = ", "
+
+# OPTIONAL: Path to the FFmpeg binary
+#ffpath = "/usr/bin/ffmpeg"
+
+default_profile = "mp3@320"
+
+[profiles.'mp3@320']
+quality = 320
+cover_art = true
+extension = "mp3"
+args = [
+    "-c:a", "libmp3lame",
+    "-b:a", "320k",
+    "-metadata:s:v", "title=Album Cover",
+    "-metadata:s:v", "title=Cover (front)",
+    "-metadata", "title=%t",
+    "-metadata", "artist=%a",
+    "-metadata", "album=%b",
+    "-map", "0:0",
+    "-map", "1:0",
+]
