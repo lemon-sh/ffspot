@@ -14,9 +14,9 @@ async fn resolve_track(session: &Session, id: &SpotifyId) -> Result<Track> {
     }
 }
 
-async fn resolve_track_ids(session: &Session, ids: impl Iterator<Item = &SpotifyId>) -> Result<Vec<Track>> {
+async fn resolve_track_ids(session: &Session, ids: impl Iterator<Item = &SpotifyId>, pb: ProgressBar) -> Result<Vec<Track>> {
     let mut tracks = Vec::new();
-    for id in ids {
+    for id in pb.wrap_iter(ids) {
         tracks.push(Track::get(session, id).await?);
     }
     Ok(tracks)
@@ -38,11 +38,13 @@ pub async fn resolve_tracks(
         }
         "album" => {
             let album = Album::get(session, &id).await?;
-            Ok(resolve_track_ids(session, album.tracks()).await?)
+            pb.set_length(album.tracks().count() as u64);
+            Ok(resolve_track_ids(session, album.tracks(), pb).await?)
         },
         "playlist" => {
             let playlist = Playlist::get(session, &id).await?;
-            Ok(resolve_track_ids(session, playlist.tracks()).await?)
+            pb.set_length(playlist.tracks().count() as u64);
+            Ok(resolve_track_ids(session, playlist.tracks(), pb).await?)
         },
         _ => panic!("Unknown resource type {resource_type:?}. The regex shouldn't have matched."),
     }

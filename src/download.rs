@@ -47,7 +47,7 @@ pub async fn download(
 ) -> Result<()> {
     let profile_name = encoding_profile.unwrap_or(&cfg.default_profile);
     let Some(profile) = cfg.profiles.remove(profile_name) else {
-        return Err(eyre!("Encoding profile {profile_name} not found"))
+        return Err(eyre!("Encoding profile {profile_name:?} not found"))
     };
 
     let allowed_formats: &[AudioFileFormat] = match profile.quality {
@@ -158,8 +158,8 @@ pub async fn download(
             download_pb.set_message(format!(
                 "(downloading cover art...) [{seq}/{track_count}] {filename}"
             ));
-            covers.sort_by_key(|i| i.width * i.height);
-            let cover_id = covers.first().unwrap().id;
+            covers.sort_unstable_by_key(|i| i.width * i.height);
+            let cover_id = covers.last().unwrap().id;
             let cover_url = format!("https://i.scdn.co/image/{cover_id}");
             let mut cover_resp = reqwest::get(cover_url).await?.error_for_status()?;
             let mut cover_file = TempFile::new().await?;
