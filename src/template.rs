@@ -78,7 +78,7 @@ impl Template {
                 Component::Seq => {
                     let (seq, seq_digits) = (fields.seq, fields.seq_digits);
                     write!(output, "{seq:0seq_digits$}")?;
-                },
+                }
                 Component::Track => write!(output, "{}", fields.track)?,
                 Component::Disc => write!(output, "{}", fields.disc)?,
                 Component::Language => output.push_str(fields.language),

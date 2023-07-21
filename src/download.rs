@@ -2,7 +2,7 @@ use std::{
     borrow::Cow,
     collections::HashMap,
     ffi::OsString,
-    io::{self, Seek},
+    io::{self, ErrorKind, Seek},
     path::Path,
     process::{Command, Stdio},
     sync::Arc,
@@ -17,9 +17,14 @@ use librespot::{
     metadata::{audio::AudioFileFormat, Track},
 };
 use owo_colors::{OwoColorize, Stream::Stdout};
-use tokio::{io::AsyncWriteExt, task};
+use tokio::{
+    fs::{create_dir_all, OpenOptions},
+    io::AsyncWriteExt,
+    task,
+};
 
 use crate::{
+    cli::Args,
     config::{Config, EncodingProfile},
     resolve,
     template::{Template, TemplateFields},
@@ -40,13 +45,15 @@ fn select_file(
 pub async fn download(
     resource_type: &str,
     resource_id: &str,
-    path_template: Template,
     session: Session,
     mut cfg: Config,
-    skip_existing: bool,
-    encoding_profile: Option<&str>,
+    cli: &Args,
 ) -> Result<()> {
-    let profile_name = encoding_profile.unwrap_or(&cfg.default_profile);
+    let path_template = Template::compile(cli.output.as_deref().unwrap_or(&cfg.output))?;
+    let profile_name = cli
+        .encoding_profile
+        .as_deref()
+        .unwrap_or(&cfg.default_profile);
     let Some(profile) = cfg.profiles.remove(profile_name) else {
         return Err(eyre!("Encoding profile {profile_name:?} not found"))
     };
@@ -105,7 +112,7 @@ pub async fn download(
             &path_template,
             &session,
             &cfg.artists_separator,
-            skip_existing,
+            cli.skip_existing,
             &profile,
             seq,
             seq_digits,
@@ -115,6 +122,7 @@ pub async fn download(
             spclient,
             track_count,
             &profile_ffargs,
+            cli.external_cover_art.as_deref(),
         )
         .await;
 
@@ -161,6 +169,7 @@ async fn download_track(
     spclient: &SpClient,
     track_count: usize,
     profile_ffargs: &[Template],
+    external_cover_art: Option<&str>,
 ) -> Result<bool> {
     let mut artists = String::new();
     let last_n = track.artists.len() - 1;
@@ -187,6 +196,9 @@ async fn download_track(
 
     let path_string = path_template.resolve(&template_fields)?;
     let path = Path::new(&path_string);
+
+    let parent = path.parent().ok_or_else(|| eyre!("Specified path has no parent"))?;
+    create_dir_all(parent).await?;
 
     if skip_existing && path.exists() {
         return Ok(false);
@@ -227,18 +239,42 @@ async fn download_track(
     let mut covers = track.album.covers.0;
     let mut _cover = None;
 
-    if profile.cover_art && !covers.is_empty() {
-        download_pb.set_message(format!(
-            "(downloading cover art...) [{seq}/{track_count}] {filename}"
-        ));
-        covers.sort_unstable_by_key(|i| i.width * i.height);
-        let cover_id = covers.last().unwrap().id;
-        let cover_data = spclient.get_image(&cover_id).await?;
-        let mut cover_file = TempFile::new().await?;
-        cover_file.write_all(&cover_data).await?;
-        ffargs.push("-i".into());
-        ffargs.push(cover_file.file_path().to_string_lossy().into_owned().into());
-        _cover = Some(cover_file);
+    if !covers.is_empty() {
+        if profile.cover_art {
+            download_pb.set_message(format!(
+                "(downloading cover art...) [{seq}/{track_count}] {filename}"
+            ));
+            covers.sort_unstable_by_key(|i| i.height);
+            let cover_id = covers.last().unwrap().id;
+            let cover_data = spclient.get_image(&cover_id).await?;
+
+            let mut cover_file = TempFile::new().await?;
+            cover_file.write_all(&cover_data).await?;
+            ffargs.push("-i".into());
+            ffargs.push(cover_file.file_path().to_string_lossy().into_owned().into());
+            _cover = Some(cover_file);
+        } else if let Some(external_cover_art) = external_cover_art {
+            let result = OpenOptions::new()
+                .write(true)
+                .create_new(true)
+                .open(parent.join(external_cover_art))
+                .await;
+
+            match result {
+                Ok(mut cover_file) => {
+                    download_pb.set_message(format!(
+                        "(downloading cover art...) [{seq}/{track_count}] {filename}"
+                    ));
+                    covers.sort_unstable_by_key(|i| i.height);
+                    let cover_id = covers.last().unwrap().id;
+                    let cover_data = spclient.get_image(&cover_id).await?;
+
+                    cover_file.write_all(&cover_data).await?
+                }
+                Err(e) if e.kind() == ErrorKind::AlreadyExists => {}
+                Err(e) => return Err(eyre!(e)),
+            }
+        }
     }
 
     for arg in profile_ffargs {

@@ -19,8 +19,6 @@ use regex::Regex;
 use tracing::Level;
 use tracing_appender::rolling::{RollingFileAppender, Rotation};
 
-use crate::template::Template;
-
 mod cli;
 mod config;
 mod download;
@@ -49,7 +47,7 @@ async fn main() -> Result<()> {
 
     let cli = cli::Args::parse();
 
-    let mut config = match config::load()? {
+    let config = match config::load()? {
         LoadResult::Opened(c) => c,
         LoadResult::Created(path) => {
             eprintln!(
@@ -65,15 +63,10 @@ async fn main() -> Result<()> {
 
     ffmpeg_healthcheck(&config.ffpath)?;
 
-    if let Some(output) = cli.output {
-        config.output = output;
-    }
-
     let Some((resource_type, resource_id)) = parse_spotify_uri(&cli.resource) else {
         eprintln!("{}", "Error: The supplied resource URL/URI is invalid.".if_supports_color(Stdout, OwoColorize::bright_red));
         process::exit(2)
     };
-    let path_template = Template::compile(&config.output)?;
 
     eprintln!(
         "{}",
@@ -90,16 +83,7 @@ async fn main() -> Result<()> {
         username
     );
 
-    download::download(
-        resource_type,
-        resource_id,
-        path_template,
-        session,
-        config,
-        cli.skip_existing,
-        cli.encoding_profile.as_deref(),
-    )
-    .await?;
+    download::download(resource_type, resource_id, session, config, &cli).await?;
 
     Ok(())
 }
