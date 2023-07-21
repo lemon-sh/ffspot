@@ -6,10 +6,15 @@ password = "<your password here>"
 
 # Default output path
 # The following wildcards can be used:
-#   %a - artist
+#   %a - artists
 #   %t - track name
 #   %b - album
-#   %s - track number in download queue
+#   %s - position in download queue
+#   %n - track number in the album
+#   %d - disc number
+#   %l - language
+#   %y - year
+#   %p - publisher (label)
 #   %e - extension from the encoding profile
 output = "./%s. %a - %t.%e"
 
@@ -38,6 +43,7 @@ cover_art = true
 extension = "mp3"
 
 # FFmpeg command-line arguments
+# You can use the same wildcards as with `output`.
 args = [
     "-c:a", "libmp3lame",  # MP3 codec
     "-b:a", "320k",  # 320kbps bitrate

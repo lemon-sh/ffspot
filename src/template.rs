@@ -7,20 +7,30 @@ pub struct Template(Vec<Component>);
 #[derive(Debug)]
 enum Component {
     Literal(String),
-    Author,
+    Artists,
+    Title,
     Album,
+    Seq,
     Track,
-    Number,
+    Disc,
+    Language,
+    Year,
+    Publisher,
     Extension,
 }
 
 pub struct TemplateFields<'a> {
-    pub author: &'a str,
-    pub track: &'a str,
+    pub artists: &'a str,
+    pub title: &'a str,
     pub album: &'a str,
-    pub extension: &'a str,
     pub seq: usize,
     pub seq_digits: usize,
+    pub track: i32,
+    pub disc: i32,
+    pub language: &'a str,
+    pub year: i32,
+    pub publisher: &'a str,
+    pub extension: &'a str,
 }
 
 impl Template {
@@ -36,10 +46,15 @@ impl Template {
                 }
                 prev_pos = pos + 2;
                 match template_bytes.get(pos + 1) {
-                    Some(b'a') => components.push(Component::Author),
-                    Some(b't') => components.push(Component::Track),
+                    Some(b'a') => components.push(Component::Artists),
+                    Some(b't') => components.push(Component::Title),
                     Some(b'b') => components.push(Component::Album),
-                    Some(b's') => components.push(Component::Number),
+                    Some(b's') => components.push(Component::Seq),
+                    Some(b'n') => components.push(Component::Track),
+                    Some(b'd') => components.push(Component::Disc),
+                    Some(b'l') => components.push(Component::Language),
+                    Some(b'y') => components.push(Component::Year),
+                    Some(b'p') => components.push(Component::Publisher),
                     Some(b'e') => components.push(Component::Extension),
                     _ => return Err(eyre!("{template:?} is not a valid path template.")),
                 }
@@ -57,13 +72,18 @@ impl Template {
         for component in &self.0 {
             match component {
                 Component::Literal(l) => output.push_str(l),
-                Component::Author => output.push_str(fields.author),
-                Component::Track => output.push_str(fields.track),
+                Component::Artists => output.push_str(fields.artists),
+                Component::Title => output.push_str(fields.title),
                 Component::Album => output.push_str(fields.album),
-                Component::Number => {
+                Component::Seq => {
                     let (seq, seq_digits) = (fields.seq, fields.seq_digits);
                     write!(output, "{seq:0seq_digits$}")?;
-                }
+                },
+                Component::Track => write!(output, "{}", fields.track)?,
+                Component::Disc => write!(output, "{}", fields.disc)?,
+                Component::Language => output.push_str(fields.language),
+                Component::Year => write!(output, "{}", fields.year)?,
+                Component::Publisher => output.push_str(fields.publisher),
                 Component::Extension => output.push_str(fields.extension),
             };
         }

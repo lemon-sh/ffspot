@@ -162,22 +162,27 @@ async fn download_track(
     track_count: usize,
     profile_ffargs: &[Template],
 ) -> Result<bool> {
-    let mut author = String::new();
+    let mut artists = String::new();
     let last_n = track.artists.len() - 1;
     for (n, artist) in track.artists.0.iter().enumerate() {
-        author.push_str(&artist.name);
+        artists.push_str(&artist.name);
         if n != last_n {
-            author.push_str(artists_separator);
+            artists.push_str(artists_separator);
         }
     }
 
     let template_fields = TemplateFields {
-        author: &author,
-        track: &track.name,
+        artists: &artists,
+        title: &track.name,
         album: &track.album.name,
-        extension: &profile.extension,
         seq,
         seq_digits,
+        track: track.number,
+        disc: track.disc_number,
+        language: &track.language_of_performance.join(", "),
+        year: track.album.date.year(),
+        publisher: &track.album.label,
+        extension: &profile.extension,
     };
 
     let path_string = path_template.resolve(&template_fields)?;
