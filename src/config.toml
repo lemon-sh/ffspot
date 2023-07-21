@@ -49,9 +49,14 @@ args = [
     "-b:a", "320k",  # 320kbps bitrate
     "-metadata:s:v", "title=Album Cover",  # cover art metadata
     "-metadata:s:v", "title=Cover (front)",  # cover art metadata
-    "-metadata", "title=%t",  # song title
-    "-metadata", "artist=%a",  # song artist
-    "-metadata", "album=%b",  # song album
+    "-metadata", "artist=%a",
+    "-metadata", "title=%t",
+    "-metadata", "album=%b",
+    "-metadata", "track=%n",
+    "-metadata", "disc=%d",
+    "-metadata", "language=%l",
+    "-metadata", "year=%y",
+    "-metadata", "publisher=%p",
     "-map", "0:0",  # include the audio stream
     "-map", "1:0",  # include the video stream (cover art)
 ]
@@ -60,7 +65,7 @@ args = [
 # This profile should have the highest quality possible with Spotify.
 [profiles.ogg]
 quality = 320
-cover_art = true
+cover_art = false
 extension = "ogg"
 args = [
     "-c:a", "copy",  # no transcoding
