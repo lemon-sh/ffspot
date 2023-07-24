@@ -46,6 +46,7 @@ extension = "mp3"
 # You can use the same wildcards as with `output`.
 args = [
     "-c:a", "libmp3lame",  # MP3 codec
+    "-c:v", "copy",  # don't convert the cover art to JPEG
     "-b:a", "320k",  # 320kbps bitrate
     "-metadata:s:v", "title=Album Cover",  # cover art metadata
     "-metadata:s:v", "title=Cover (front)",  # cover art metadata
@@ -55,7 +56,7 @@ args = [
     "-metadata", "track=%n",
     "-metadata", "disc=%d",
     "-metadata", "language=%l",
-    "-metadata", "year=%y",
+    "-metadata", "date=%y",
     "-metadata", "publisher=%p",
     "-map", "0:0",  # include the audio stream
     "-map", "1:0",  # include the video stream (cover art)
@@ -68,8 +69,12 @@ quality = 320
 cover_art = false
 extension = "ogg"
 args = [
-    "-c:a", "copy",  # no transcoding
-    "-metadata", "title=%t",  # song title
-    "-metadata", "artist=%a",  # song artist
-    "-metadata", "album=%b",  # song album
+    "-c", "copy",  # no transcoding
+    "-metadata", "title=%t",
+    "-metadata", "artist=%a",
+    "-metadata", "language=%l",
+    "-metadata", "album=%b",
+    "-metadata", "tracknumber=%n",
+    "-metadata", "organization=%p",
+    "-metadata", "date=%y",
 ]
