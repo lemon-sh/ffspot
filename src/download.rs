@@ -216,7 +216,7 @@ async fn download_track(
 
     let key = session.audio_key().request(track.id, file).await?;
 
-    let stream = AudioFile::open(&session, file, 1024 * 1024 * 1024).await?;
+    let stream = AudioFile::open(&session, file, 1024 * 1024).await?;
 
     let controller = stream.get_stream_loader_controller()?;
     let size = controller.len();
