@@ -1,14 +1,26 @@
-use color_eyre::Result;
+use std::time::Duration;
+
+use color_eyre::{Result, eyre::eyre};
 use indicatif::ProgressBar;
 use librespot::{
-    core::{Session, SpotifyId},
+    core::{Session, SpotifyId, error::ErrorKind},
     metadata::{Album, Metadata, Playlist, Track},
 };
 
+async fn get_track(session: &Session, id: &SpotifyId) -> Result<Track> {
+    loop {
+        match Track::get(session, id).await {
+            Err(e) if e.kind == ErrorKind::ResourceExhausted => tokio::time::sleep(Duration::from_secs(10)).await,
+            Err(e) => return Err(eyre!(e)),
+            Ok(o) => return Ok(o)
+        }
+    }
+}
+
 async fn resolve_track(session: &Session, id: &SpotifyId) -> Result<Track> {
-    let track = Track::get(session, id).await?;
+    let track = get_track(session, id).await?;
     if let Some(alternative) = track.alternatives.first() {
-        Ok(Track::get(session, alternative).await?)
+        Ok(get_track(session, alternative).await?)
     } else {
         Ok(track)
     }

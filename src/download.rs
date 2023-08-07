@@ -140,7 +140,7 @@ pub async fn download(
             "{} {id}\n{error:?}",
             "An error has occurred while downloading track"
                 .if_supports_color(Stdout, OwoColorize::bright_red)
-        )
+        );
     }
 
     eprintln!(
@@ -216,7 +216,7 @@ async fn download_track(
 
     let key = session.audio_key().request(track.id, file).await?;
 
-    let stream = AudioFile::open(&session, file, 1024 * 1024).await?;
+    let stream = AudioFile::open(session, file, 1024 * 1024).await?;
 
     let controller = stream.get_stream_loader_controller()?;
     let size = controller.len();
@@ -269,7 +269,7 @@ async fn download_track(
                     let cover_id = covers.last().unwrap().id;
                     let cover_data = spclient.get_image(&cover_id).await?;
 
-                    cover_file.write_all(&cover_data).await?
+                    cover_file.write_all(&cover_data).await?;
                 }
                 Err(e) if e.kind() == ErrorKind::AlreadyExists => {}
                 Err(e) => return Err(eyre!(e)),
