@@ -21,7 +21,7 @@ async fn resolve_track_ids(
 ) -> Result<Vec<Track>> {
     let mut tracks = Vec::new();
     for id in pb.wrap_iter(ids) {
-        tracks.push(Track::get(session, id).await?);
+        tracks.push(resolve_track(session, id).await?);
     }
     Ok(tracks)
 }
