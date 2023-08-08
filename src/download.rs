@@ -5,7 +5,7 @@ use std::{
     io::{self, ErrorKind, Seek},
     path::Path,
     process::{Command, Stdio},
-    sync::Arc,
+    sync::Arc, fs,
 };
 
 use async_tempfile::TempFile;
@@ -283,7 +283,7 @@ async fn download_track(
         ffargs.push(arg.resolve(&template_fields)?.into());
     }
 
-    ffargs.push(path_string.into());
+    ffargs.push(path_string.clone().into());
 
     tracing::debug!("ffmpeg args built: {ffargs:?}");
 
@@ -313,6 +313,10 @@ async fn download_track(
         }
     });
 
-    task.await??;
-    Ok(true)
+    if let Err(e) = task.await? {
+        let _ = fs::remove_file(path);
+        Err(e)
+    } else {
+        Ok(true)
+    }
 }
