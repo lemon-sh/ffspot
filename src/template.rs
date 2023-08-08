@@ -1,5 +1,5 @@
 use color_eyre::{eyre::eyre, Result};
-use std::fmt::Write;
+use std::{borrow::Cow, fmt::Write};
 
 #[derive(Debug)]
 pub struct Template(Vec<Component>);
@@ -20,17 +20,47 @@ enum Component {
 }
 
 pub struct TemplateFields<'a> {
-    pub artists: &'a str,
-    pub title: &'a str,
-    pub album: &'a str,
+    pub artists: Cow<'a, str>,
+    pub title: Cow<'a, str>,
+    pub album: Cow<'a, str>,
     pub seq: usize,
     pub seq_digits: usize,
     pub track: i32,
     pub disc: i32,
-    pub language: &'a str,
+    pub language: Cow<'a, str>,
     pub year: i32,
-    pub publisher: &'a str,
-    pub extension: &'a str,
+    pub publisher: Cow<'a, str>,
+    pub extension: Cow<'a, str>,
+}
+
+impl<'a> TemplateFields<'a> {
+    pub fn sanitize(&'a self) -> Self {
+        TemplateFields {
+            artists: sanitize_string(&self.artists),
+            title: sanitize_string(&self.title),
+            album: sanitize_string(&self.album),
+            seq: self.seq,
+            seq_digits: self.seq_digits,
+            track: self.track,
+            disc: self.disc,
+            language: sanitize_string(&self.language),
+            year: self.year,
+            publisher: sanitize_string(&self.publisher),
+            extension: sanitize_string(&self.extension),
+        }
+    }
+}
+
+fn path_pattern(c: char) -> bool {
+    c == '/' || c == '\\'
+}
+
+fn sanitize_string(string: &str) -> Cow<'_, str> {
+    if string.contains(path_pattern) {
+        string.replace(path_pattern, " ").into()
+    } else {
+        string.into()
+    }
 }
 
 impl Template {
@@ -72,19 +102,19 @@ impl Template {
         for component in &self.0 {
             match component {
                 Component::Literal(l) => output.push_str(l),
-                Component::Artists => output.push_str(fields.artists),
-                Component::Title => output.push_str(fields.title),
-                Component::Album => output.push_str(fields.album),
+                Component::Artists => output.push_str(&fields.artists),
+                Component::Title => output.push_str(&fields.title),
+                Component::Album => output.push_str(&fields.album),
                 Component::Seq => {
                     let (seq, seq_digits) = (fields.seq, fields.seq_digits);
                     write!(output, "{seq:0seq_digits$}")?;
                 }
                 Component::Track => write!(output, "{}", fields.track)?,
                 Component::Disc => write!(output, "{}", fields.disc)?,
-                Component::Language => output.push_str(fields.language),
+                Component::Language => output.push_str(&fields.language),
                 Component::Year => write!(output, "{}", fields.year)?,
-                Component::Publisher => output.push_str(fields.publisher),
-                Component::Extension => output.push_str(fields.extension),
+                Component::Publisher => output.push_str(&fields.publisher),
+                Component::Extension => output.push_str(&fields.extension),
             };
         }
         Ok(output)

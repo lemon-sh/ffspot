@@ -181,23 +181,25 @@ async fn download_track(
     }
 
     let template_fields = TemplateFields {
-        artists: &artists,
-        title: &track.name,
-        album: &track.album.name,
+        artists: artists.into(),
+        title: track.name.into(),
+        album: track.album.name.into(),
         seq,
         seq_digits,
         track: track.number,
         disc: track.disc_number,
-        language: &track.language_of_performance.join(", "),
+        language: track.language_of_performance.join(", ").into(),
         year: track.album.date.year(),
-        publisher: &track.album.label,
-        extension: &profile.extension,
+        publisher: track.album.label.into(),
+        extension: (&profile.extension).into(),
     };
 
-    let path_string = path_template.resolve(&template_fields)?;
+    let path_string = path_template.resolve(&template_fields.sanitize())?;
     let path = Path::new(&path_string);
 
-    let parent = path.parent().ok_or_else(|| eyre!("Specified path has no parent"))?;
+    let parent = path
+        .parent()
+        .ok_or_else(|| eyre!("Specified path has no parent"))?;
     create_dir_all(parent).await?;
 
     if skip_existing && path.exists() {
