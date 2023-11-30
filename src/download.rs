@@ -2,10 +2,11 @@ use std::{
     borrow::Cow,
     collections::HashMap,
     ffi::OsString,
+    fs,
     io::{self, ErrorKind, Seek},
     path::Path,
     process::{Command, Stdio},
-    sync::Arc, fs,
+    sync::Arc,
 };
 
 use async_tempfile::TempFile;
@@ -55,7 +56,7 @@ pub async fn download(
         .as_deref()
         .unwrap_or(&cfg.default_profile);
     let Some(profile) = cfg.profiles.remove(profile_name) else {
-        return Err(eyre!("Encoding profile {profile_name:?} not found"))
+        return Err(eyre!("Encoding profile {profile_name:?} not found"));
     };
 
     let allowed_formats: &[AudioFileFormat] = match profile.quality {

@@ -64,7 +64,11 @@ async fn main() -> Result<()> {
     ffmpeg_healthcheck(&config.ffpath)?;
 
     let Some((resource_type, resource_id)) = parse_spotify_uri(&cli.resource) else {
-        eprintln!("{}", "Error: The supplied resource URL/URI is invalid.".if_supports_color(Stdout, OwoColorize::bright_red));
+        eprintln!(
+            "{}",
+            "Error: The supplied resource URL/URI is invalid."
+                .if_supports_color(Stdout, OwoColorize::bright_red)
+        );
         process::exit(2)
     };
 

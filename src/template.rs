@@ -51,13 +51,27 @@ impl<'a> TemplateFields<'a> {
     }
 }
 
-fn path_pattern(c: char) -> bool {
+#[cfg(unix)]
+fn sanitize_pattern(c: char) -> bool {
     c == '/' || c == '\\'
 }
 
+#[cfg(windows)]
+fn sanitize_pattern(c: char) -> bool {
+    c == '/'
+        || c == '\\'
+        || c == ':'
+        || c == '*'
+        || c == '?'
+        || c == '"'
+        || c == '<'
+        || c == '>'
+        || c == '|'
+}
+
 fn sanitize_string(string: &str) -> Cow<'_, str> {
-    if string.contains(path_pattern) {
-        string.replace(path_pattern, " ").into()
+    if string.contains(sanitize_pattern) {
+        string.replace(sanitize_pattern, " ").into()
     } else {
         string.into()
     }
