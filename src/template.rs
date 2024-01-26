@@ -16,7 +16,6 @@ enum Component {
     Language,
     Year,
     Publisher,
-    Extension,
 }
 
 pub struct TemplateFields<'a> {
@@ -30,7 +29,6 @@ pub struct TemplateFields<'a> {
     pub language: Cow<'a, str>,
     pub year: i32,
     pub publisher: Cow<'a, str>,
-    pub extension: Cow<'a, str>,
 }
 
 impl<'a> TemplateFields<'a> {
@@ -46,7 +44,6 @@ impl<'a> TemplateFields<'a> {
             language: sanitize_string(&self.language),
             year: self.year,
             publisher: sanitize_string(&self.publisher),
-            extension: sanitize_string(&self.extension),
         }
     }
 }
@@ -99,7 +96,6 @@ impl Template {
                     Some(b'l') => components.push(Component::Language),
                     Some(b'y') => components.push(Component::Year),
                     Some(b'p') => components.push(Component::Publisher),
-                    Some(b'e') => components.push(Component::Extension),
                     _ => return Err(eyre!("{template:?} is not a valid path template.")),
                 }
             }
@@ -127,8 +123,7 @@ impl Template {
                 Component::Disc => write!(output, "{}", fields.disc)?,
                 Component::Language => output.push_str(&fields.language),
                 Component::Year => write!(output, "{}", fields.year)?,
-                Component::Publisher => output.push_str(&fields.publisher),
-                Component::Extension => output.push_str(&fields.extension),
+                Component::Publisher => output.push_str(&fields.publisher)
             };
         }
         Ok(output)

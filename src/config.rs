@@ -15,6 +15,8 @@ pub struct Config {
     pub output: String,
     pub artists_separator: String,
     pub default_profile: String,
+    #[serde(default)]
+    pub max_filename_len: Option<usize>,
     #[serde(default = "default_ffpath")]
     pub ffpath: String,
     pub profiles: HashMap<String, EncodingProfile>,

@@ -99,7 +99,7 @@ pub async fn download(
     let track_count = tracks.len();
     let seq_digits = track_count.to_string().len();
 
-    let ffpath = Arc::new(OsString::from(cfg.ffpath));
+    let ffpath = Arc::new(OsString::from(&cfg.ffpath));
     let spclient = session.spclient();
 
     let mut errors = Vec::new();
@@ -112,7 +112,7 @@ pub async fn download(
             track,
             &path_template,
             &session,
-            &cfg.artists_separator,
+            &cfg,
             cli.skip_existing,
             &profile,
             seq,
@@ -159,7 +159,7 @@ async fn download_track(
     track: Track,
     path_template: &Template,
     session: &Session,
-    artists_separator: &str,
+    cfg: &Config,
     skip_existing: bool,
     profile: &EncodingProfile,
     seq: usize,
@@ -177,7 +177,7 @@ async fn download_track(
     for (n, artist) in track.artists.0.iter().enumerate() {
         artists.push_str(&artist.name);
         if n != last_n {
-            artists.push_str(artists_separator);
+            artists.push_str(&cfg.artists_separator);
         }
     }
 
@@ -192,10 +192,13 @@ async fn download_track(
         language: track.language_of_performance.join(", ").into(),
         year: track.album.date.year(),
         publisher: track.album.label.into(),
-        extension: (&profile.extension).into(),
     };
 
-    let path_string = path_template.resolve(&template_fields.sanitize())?;
+    let mut path_string = path_template.resolve(&template_fields.sanitize())?;
+    if let Some(max_len) = cfg.max_filename_len {
+        path_string.truncate(max_len);
+    }
+    path_string.push_str(&profile.extension);
     let path = Path::new(&path_string);
 
     let parent = path

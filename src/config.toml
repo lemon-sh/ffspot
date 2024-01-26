@@ -15,8 +15,11 @@ password = "<your password here>"
 #   %l - language
 #   %y - year
 #   %p - publisher (label)
-#   %e - extension from the encoding profile
-output = "./%s. %a - %t.%e"
+# The extension from the encoding profile will be appended to this path.
+output = "./%s. %a - %t"
+
+# Maximum filename length
+max_filename_len = 128
 
 # Separator between artist names when there are multiple artists
 artists_separator = ", "
