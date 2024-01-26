@@ -1,14 +1,14 @@
 [package]
 name = "ffspot"
 description = "Download music from Spotify"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 
 [profile.release]
 strip = "debuginfo"
 
 [dependencies]
-librespot = { git = "https://github.com/librespot-org/librespot", rev = "8e43c3f097131f9dbcb117006160945be29d4b29", default_features = false }
+librespot = { git = "https://github.com/librespot-org/librespot", rev = "f5a46c61d2a1a96120516cee26cd7e4b95c20f50", default_features = false }
 indicatif = "0.17"
 color-eyre = { version = "0.6", default-features = false, features = ["track-caller"]}
 tokio = "1"
