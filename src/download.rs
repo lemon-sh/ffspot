@@ -198,6 +198,7 @@ async fn download_track(
     if let Some(max_len) = cfg.max_filename_len {
         path_string.truncate(max_len);
     }
+    path_string.push('.');
     path_string.push_str(&profile.extension);
     let path = Path::new(&path_string);
 
