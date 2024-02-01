@@ -24,9 +24,9 @@ clap = { version = "4.3", default-features = false, features = [
     "derive",
 ] }
 regex = "1.8"
-owo-colors = { version = "4.0", features = ["supports-colors"] }
 tracing-appender = "0.2"
 tracing-subscriber = "0.3"
 tracing = "0.1"
 which = "6.0"
 async-tempfile = "0.5"
+colored = "2.1"

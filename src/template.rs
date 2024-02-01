@@ -123,7 +123,7 @@ impl Template {
                 Component::Disc => write!(output, "{}", fields.disc)?,
                 Component::Language => output.push_str(&fields.language),
                 Component::Year => write!(output, "{}", fields.year)?,
-                Component::Publisher => output.push_str(&fields.publisher)
+                Component::Publisher => output.push_str(&fields.publisher),
             };
         }
         Ok(output)

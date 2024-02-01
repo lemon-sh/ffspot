@@ -11,13 +11,13 @@ use std::{
 
 use async_tempfile::TempFile;
 use color_eyre::{eyre::eyre, Result};
+use colored::Colorize;
 use indicatif::{ProgressBar, ProgressStyle};
 use librespot::{
     audio::{AudioDecrypt, AudioFile},
     core::{session::Session, spclient::SpClient, spotify_id::FileId},
     metadata::{audio::AudioFileFormat, Track},
 };
-use owo_colors::{OwoColorize, Stream::Stdout};
 use tokio::{
     fs::{create_dir_all, OpenOptions},
     io::AsyncWriteExt,
@@ -139,17 +139,16 @@ pub async fn download(
     for (error, id) in errors {
         eprintln!(
             "{} {id}\n{error:?}",
-            "An error has occurred while downloading track"
-                .if_supports_color(Stdout, OwoColorize::bright_red)
+            "An error has occurred while downloading track".bright_red()
         );
     }
 
     eprintln!(
         "{} ({skipped} {}, {} {})",
-        "Done!".if_supports_color(Stdout, OwoColorize::bright_green),
-        "skipped".if_supports_color(Stdout, OwoColorize::bright_cyan),
+        "Done!".bright_green(),
+        "skipped".bright_cyan(),
         error_count,
-        "errors".if_supports_color(Stdout, OwoColorize::bright_cyan)
+        "errors".bright_cyan()
     );
 
     Ok(())

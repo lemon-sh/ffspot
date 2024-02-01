@@ -9,12 +9,12 @@ use color_eyre::{
     eyre::{eyre, Context},
     Result,
 };
+use colored::Colorize;
 use config::LoadResult;
 use librespot::{
     core::{cache::Cache, config::SessionConfig, session::Session},
     discovery::Credentials,
 };
-use owo_colors::{OwoColorize, Stream::Stdout};
 use regex::Regex;
 use tracing::Level;
 use tracing_appender::rolling::{RollingFileAppender, Rotation};
@@ -30,6 +30,9 @@ async fn main() -> Result<()> {
     color_eyre::config::HookBuilder::default()
         .display_env_section(false)
         .install()?;
+
+    #[cfg(windows)]
+    colored::control::set_virtual_terminal(true).unwrap();
 
     if let Ok(log_location) = env::var("FFSPOT_LOG") {
         let path = PathBuf::from(log_location);
@@ -52,10 +55,8 @@ async fn main() -> Result<()> {
         LoadResult::Created(path) => {
             eprintln!(
                 "{} {path}\n{}",
-                "A new configuration file has been created in"
-                    .if_supports_color(Stdout, OwoColorize::bright_green),
-                "Adjust it and run ffspot again."
-                    .if_supports_color(Stdout, OwoColorize::bright_magenta)
+                "A new configuration file has been created in".bright_green(),
+                "Adjust it and run ffspot again.".bright_magenta()
             );
             return Ok(());
         }
@@ -66,26 +67,18 @@ async fn main() -> Result<()> {
     let Some((resource_type, resource_id)) = parse_spotify_uri(&cli.resource) else {
         eprintln!(
             "{}",
-            "Error: The supplied resource URL/URI is invalid."
-                .if_supports_color(Stdout, OwoColorize::bright_red)
+            "Error: The supplied resource URL/URI is invalid.".bright_red()
         );
         process::exit(2)
     };
 
-    eprintln!(
-        "{}",
-        "Logging in...".if_supports_color(Stdout, OwoColorize::bright_cyan)
-    );
+    eprintln!("{}", "Logging in...".bright_cyan());
 
     let (session, username) = login(&config.username, &config.password)
         .await
         .wrap_err("Login failed. Make sure that the credentials in the config file are correct.")?;
 
-    eprintln!(
-        "{}{}",
-        "Logged in as ".if_supports_color(Stdout, OwoColorize::bright_green),
-        username
-    );
+    eprintln!("{}{}", "Logged in as ".bright_green(), username);
 
     download::download(resource_type, resource_id, session, config, &cli).await?;
 
