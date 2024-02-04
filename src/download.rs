@@ -10,7 +10,10 @@ use std::{
 };
 
 use async_tempfile::TempFile;
-use color_eyre::{eyre::eyre, Result};
+use color_eyre::{
+    eyre::{bail, eyre},
+    Result,
+};
 use colored::Colorize;
 use indicatif::{ProgressBar, ProgressStyle};
 use librespot::{
@@ -56,7 +59,7 @@ pub async fn download(
         .as_deref()
         .unwrap_or(&cfg.default_profile);
     let Some(profile) = cfg.profiles.remove(profile_name) else {
-        return Err(eyre!("Encoding profile {profile_name:?} not found"));
+        bail!("Encoding profile {profile_name:?} not found");
     };
 
     let allowed_formats: &[AudioFileFormat] = match profile.quality {
@@ -278,7 +281,7 @@ async fn download_track(
                     cover_file.write_all(&cover_data).await?;
                 }
                 Err(e) if e.kind() == ErrorKind::AlreadyExists => {}
-                Err(e) => return Err(eyre!(e)),
+                Err(e) => bail!(e),
             }
         }
     }

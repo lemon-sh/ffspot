@@ -6,7 +6,7 @@ use std::{
 
 use clap::Parser;
 use color_eyre::{
-    eyre::{eyre, Context},
+    eyre::{bail, eyre, Context},
     Result,
 };
 use colored::Colorize;
@@ -88,7 +88,7 @@ async fn main() -> Result<()> {
 fn ffmpeg_healthcheck(ffpath: impl AsRef<Path>) -> Result<()> {
     let ffpath = ffpath.as_ref();
     if which::which(ffpath).is_err() {
-        return Err(eyre!("{ffpath:?} binary not found. Make sure FFmpeg is installed, or if you set a custom ffmpeg path, that the path is correct."));
+        bail!("{ffpath:?} binary not found. Make sure FFmpeg is installed, or if you set a custom ffmpeg path, that the path is correct.");
     }
     Ok(())
 }

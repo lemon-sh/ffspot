@@ -1,4 +1,7 @@
-use color_eyre::{eyre::eyre, Result};
+use color_eyre::{
+    eyre::{bail, eyre},
+    Result,
+};
 use std::{borrow::Cow, fmt::Write};
 
 #[derive(Debug)]
@@ -96,7 +99,7 @@ impl Template {
                     Some(b'l') => components.push(Component::Language),
                     Some(b'y') => components.push(Component::Year),
                     Some(b'p') => components.push(Component::Publisher),
-                    _ => return Err(eyre!("{template:?} is not a valid path template.")),
+                    _ => bail!("{template:?} is not a valid path template."),
                 }
             }
         }
