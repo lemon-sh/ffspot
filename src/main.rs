@@ -6,7 +6,7 @@ use std::{
 
 use clap::Parser;
 use color_eyre::{
-    eyre::{bail, eyre, Context},
+    eyre::{bail, Context},
     Result,
 };
 use colored::Colorize;

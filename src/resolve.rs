@@ -1,9 +1,6 @@
 use std::time::Duration;
 
-use color_eyre::{
-    eyre::{bail, eyre},
-    Result,
-};
+use color_eyre::{eyre::bail, Result};
 use indicatif::ProgressBar;
 use librespot::{
     core::{error::ErrorKind, Session, SpotifyId},

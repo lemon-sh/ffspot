@@ -1,7 +1,4 @@
-use color_eyre::{
-    eyre::{bail, eyre},
-    Result,
-};
+use color_eyre::{eyre::bail, Result};
 use std::{borrow::Cow, fmt::Write};
 
 #[derive(Debug)]
