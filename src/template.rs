@@ -50,7 +50,7 @@ impl<'a> TemplateFields<'a> {
 
 #[cfg(unix)]
 fn sanitize_pattern(c: char) -> bool {
-    c == '/' || c == '\\'
+    c == '/'
 }
 
 #[cfg(windows)]

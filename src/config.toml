@@ -21,7 +21,7 @@ output = "./%s. %a - %t"
 # Separator between artist names when there are multiple artists
 artists_separator = ", "
 
-# OPTIONAL: Maximum filename length
+# OPTIONAL: Maximum filename length, excluding the extension
 #max_filename_len = 128
 
 # OPTIONAL: Path to the FFmpeg binary
@@ -36,13 +36,13 @@ default_profile = "mp3"
 
 [profiles.mp3]
 # Source bitrate, i.e. the quality of the *input*, downloaded from Spotify
+# Possible options: 320, 160, 96
 quality = 320
 
 # Whether to include the cover art image as the 2nd stream in FFmpeg
 cover_art = true
 
 # Extension of the output file
-# It can be included in the output path with the %e wildcard
 extension = "mp3"
 
 # FFmpeg command-line arguments
