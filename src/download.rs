@@ -11,14 +11,14 @@ use std::{
 
 use async_tempfile::TempFile;
 use color_eyre::{
-    eyre::{bail, eyre},
+    eyre::{bail, eyre, OptionExt},
     Result,
 };
 use colored::Colorize;
 use indicatif::{ProgressBar, ProgressStyle};
 use librespot::{
-    audio::{AudioDecrypt, AudioFile},
-    core::{session::Session, spclient::SpClient, spotify_id::FileId},
+    audio::{AudioDecrypt, AudioFetchParams, AudioFile},
+    core::{cdn_url::CdnUrl, session::Session, spclient::SpClient, spotify_id::FileId},
     metadata::{audio::AudioFileFormat, Track},
 };
 use tokio::{
@@ -108,8 +108,7 @@ pub async fn download(
     let mut errors = Vec::new();
     let mut skipped = 0;
 
-    for (mut seq, track) in tracks.into_iter().enumerate() {
-        seq += 1;
+    for (seq, track) in tracks.into_iter().enumerate() {
         let track_id = track.id;
         let result = download_track(
             track,
@@ -118,7 +117,7 @@ pub async fn download(
             &cfg,
             cli.skip_existing,
             &profile,
-            seq,
+            seq + 1,
             seq_digits,
             allowed_formats,
             style_data.clone(),
@@ -225,16 +224,25 @@ async fn download_track(
 
     let key = session.audio_key().request(track.id, file).await?;
 
-    let stream = AudioFile::open(session, file, 1024 * 1024).await?;
+    let cdn_url = CdnUrl::new(file).resolve_audio(&session).await?;
 
-    let controller = stream.get_stream_loader_controller()?;
-    let size = controller.len();
-    controller.set_stream_mode();
+    // fire a http request to cdn_url with ureq
 
-    let download_pb = ProgressBar::new(size as u64);
+    // parse content-range to get the file size
+    let content_range = response
+        .headers()
+        .get("content-range")
+        .ok_or_eyre("spotify cdn response didn't include content-range header")?;
+    let str_value = content_range.to_str()?;
+    let hyphen_index = str_value.find('-').unwrap_or_default();
+    let slash_index = str_value.find('/').unwrap_or_default();
+    let upper_bound: usize = str_value[hyphen_index + 1..slash_index].parse()?;
+    let size = str_value[slash_index + 1..].parse()?;
+
+    let download_pb = ProgressBar::new(size);
     download_pb.set_style(style_data);
 
-    let mut raw_stream = download_pb.wrap_read(AudioDecrypt::new(Some(key), stream));
+    let mut raw_stream = AudioDecrypt::new(Some(key), response);
 
     let mut ffargs: Vec<Cow<'static, str>> = vec![
         "-y".into(),
@@ -248,6 +256,7 @@ async fn download_track(
     let mut covers = track.album.covers.0;
     let mut _cover = None;
 
+    // TODO: check if this can be de-duplicated
     if !covers.is_empty() {
         if profile.cover_art {
             download_pb.set_message(format!(

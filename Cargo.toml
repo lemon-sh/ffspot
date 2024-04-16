@@ -8,7 +8,7 @@ edition = "2021"
 strip = "debuginfo"
 
 [dependencies]
-librespot = { git = "https://github.com/librespot-org/librespot", rev = "f5a46c61d2a1a96120516cee26cd7e4b95c20f50", default_features = false }
+librespot = { git = "https://github.com/librespot-org/librespot", rev = "a6065d6bed3d40dabb9613fe773124e5b8380ecc", default_features = false }
 indicatif = "0.17"
 color-eyre = { version = "0.6", default-features = false, features = ["track-caller"]}
 tokio = "1"
@@ -30,3 +30,4 @@ tracing = "0.1"
 which = "6.0"
 async-tempfile = "0.5"
 colored = "2.1"
+ureq = "2.9"

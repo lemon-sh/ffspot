@@ -25,7 +25,7 @@ mod download;
 mod resolve;
 mod template;
 
-#[tokio::main]
+#[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<()> {
     color_eyre::config::HookBuilder::default()
         .display_env_section(false)
