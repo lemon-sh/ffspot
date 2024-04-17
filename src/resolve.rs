@@ -11,7 +11,7 @@ async fn get_track(session: &Session, id: &SpotifyId) -> Result<Track> {
     loop {
         match Track::get(session, id).await {
             Err(e) if e.kind == ErrorKind::ResourceExhausted => {
-                tokio::time::sleep(Duration::from_secs(10)).await
+                tokio::time::sleep(Duration::from_secs(10)).await;
             }
             Err(e) => bail!(e),
             Ok(o) => return Ok(o),

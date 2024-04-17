@@ -18,7 +18,7 @@ enum Component {
     Publisher,
 }
 
-pub struct TemplateFields<'a> {
+pub struct Fields<'a> {
     pub artists: Cow<'a, str>,
     pub title: Cow<'a, str>,
     pub album: Cow<'a, str>,
@@ -31,9 +31,9 @@ pub struct TemplateFields<'a> {
     pub publisher: Cow<'a, str>,
 }
 
-impl<'a> TemplateFields<'a> {
+impl<'a> Fields<'a> {
     pub fn sanitize(&'a self) -> Self {
-        TemplateFields {
+        Fields {
             artists: sanitize_string(&self.artists),
             title: sanitize_string(&self.title),
             album: sanitize_string(&self.album),
@@ -107,7 +107,7 @@ impl Template {
         Ok(Self(components))
     }
 
-    pub fn resolve(&self, fields: &TemplateFields) -> Result<String> {
+    pub fn resolve(&self, fields: &Fields) -> Result<String> {
         let mut output = String::new();
         for component in &self.0 {
             match component {

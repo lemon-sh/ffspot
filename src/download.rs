@@ -32,7 +32,7 @@ use crate::{
     cli::Args,
     config::{Config, EncodingProfile},
     resolve,
-    template::{Template, TemplateFields},
+    template::{self, Template},
 };
 
 fn select_file(
@@ -180,7 +180,7 @@ async fn download_track(
         }
     }
 
-    let template_fields = TemplateFields {
+    let template_fields = template::Fields {
         artists: artists.into(),
         title: track.name.into(),
         album: track.album.name.into(),
@@ -222,20 +222,13 @@ async fn download_track(
 
     let key = session.audio_key().request(track.id, file).await?;
 
-    let cdn_url = CdnUrl::new(file).resolve_audio(&session).await?;
+    let cdn_url = CdnUrl::new(file).resolve_audio(session).await?;
 
     let resp = task::spawn_blocking(move || -> Result<Response> {
         Ok(ureq::get(cdn_url.try_get_url()?).call()?)
     })
     .await??;
 
-    // let content_range = resp
-    //     .header("content-range")
-    //     .ok_or_eyre("spotify cdn response didn't include content-range header")?;
-    // let hyphen_index = content_range.find('-').unwrap_or_default();
-    // let slash_index = content_range.find('/').unwrap_or_default();
-    // let upper_bound: usize = content_range[hyphen_index + 1..slash_index].parse()?;
-    // let size = content_range[slash_index + 1..].parse()?;
     let size = resp
         .header("content-length")
         .ok_or_eyre("spotify cdn response didn't include content-length header")?
@@ -255,18 +248,17 @@ async fn download_track(
         "-".into(),
     ];
 
-    let mut covers = track.album.covers.0;
-    let mut _cover = None;
+    let covers = track.album.covers.0;
+    // keep the cover file in scope so that it only gets deleted after the download is finished
+    let mut _cover: Option<TempFile>;
 
-    // TODO: check if this can be de-duplicated
     let spclient = session.spclient();
     if !covers.is_empty() {
+        let cover_id = covers.iter().max_by_key(|i| i.height).unwrap().id;
         if profile.cover_art {
             download_pb.set_message(format!(
                 "(downloading cover art...) [{seq}/{track_count}] {filename}"
             ));
-            covers.sort_unstable_by_key(|i| i.height);
-            let cover_id = covers.last().unwrap().id;
             let cover_data = spclient.get_image(&cover_id).await?;
 
             let mut cover_file = TempFile::new().await?;
@@ -286,8 +278,6 @@ async fn download_track(
                     download_pb.set_message(format!(
                         "(downloading cover art...) [{seq}/{track_count}] {filename}"
                     ));
-                    covers.sort_unstable_by_key(|i| i.height);
-                    let cover_id = covers.last().unwrap().id;
                     let cover_data = spclient.get_image(&cover_id).await?;
 
                     cover_file.write_all(&cover_data).await?;
@@ -317,8 +307,11 @@ async fn download_track(
             .spawn()?;
         let mut stdin = ffmpeg.stdin.take().unwrap();
 
+        // the first 167 bytes of the decrypted audio stream are useless
+        // and they render the ogg file corrupted, so we skip them
         let mut garbage = [0u8; 167];
         audio_stream.read_exact(&mut garbage)?;
+
         io::copy(&mut audio_stream, &mut stdin)?;
 
         drop(stdin);
