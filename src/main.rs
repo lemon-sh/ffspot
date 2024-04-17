@@ -13,7 +13,7 @@ use colored::Colorize;
 use config::LoadResult;
 use librespot::{
     core::{cache::Cache, config::SessionConfig, session::Session},
-    discovery::Credentials,
+    discovery::Credentials, protocol::authentication::AuthenticationType,
 };
 use regex::Regex;
 use tracing::Level;
@@ -106,11 +106,16 @@ async fn login(
     username: impl Into<String>,
     password: impl Into<String>,
 ) -> Result<(Session, String)> {
-    let credentials = Credentials::with_password(username, password);
-    let username = credentials.username.clone();
     let cache = Cache::new(Some(get_credcache_path()?), None, None, None)?;
+    let credentials = cache.credentials().unwrap_or_else(|| Credentials::with_password(username, password));
+
+    let mut username = credentials.username.clone();
+    if credentials.auth_type == AuthenticationType::AUTHENTICATION_STORED_SPOTIFY_CREDENTIALS {
+        username.push_str(" (cached credentials)");
+    }
     let session = Session::new(SessionConfig::default(), Some(cache));
     Session::connect(&session, credentials, true).await?;
+
     Ok((session, username))
 }
 
