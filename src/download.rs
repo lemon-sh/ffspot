@@ -244,7 +244,7 @@ async fn download_track(
     let download_pb = ProgressBar::new(size);
     download_pb.set_style(pb_style);
 
-    let mut raw_stream = AudioDecrypt::new(Some(key), resp.into_reader());
+    let mut audio_stream = download_pb.wrap_read(AudioDecrypt::new(Some(key), resp.into_reader()));
 
     let mut ffargs: Vec<Cow<'static, str>> = vec![
         "-y".into(),
@@ -318,8 +318,8 @@ async fn download_track(
         let mut stdin = ffmpeg.stdin.take().unwrap();
 
         let mut garbage = [0u8; 167];
-        raw_stream.read_exact(&mut garbage)?;
-        io::copy(&mut raw_stream, &mut stdin)?;
+        audio_stream.read_exact(&mut garbage)?;
+        io::copy(&mut audio_stream, &mut stdin)?;
 
         drop(stdin);
 
