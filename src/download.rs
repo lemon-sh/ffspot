@@ -3,7 +3,7 @@ use std::{
     collections::HashMap,
     ffi::OsString,
     fs,
-    io::{self, ErrorKind, Read, Seek},
+    io::{self, ErrorKind, Read},
     path::Path,
     process::{Command, Stdio},
     sync::Arc,
@@ -17,8 +17,8 @@ use color_eyre::{
 use colored::Colorize;
 use indicatif::{ProgressBar, ProgressStyle};
 use librespot::{
-    audio::{AudioDecrypt, AudioFetchParams, AudioFile},
-    core::{cdn_url::CdnUrl, session::Session, spclient::SpClient, spotify_id::FileId},
+    audio::AudioDecrypt,
+    core::{cdn_url::CdnUrl, session::Session, spotify_id::FileId},
     metadata::{audio::AudioFileFormat, Track},
 };
 use tokio::{
@@ -224,7 +224,10 @@ async fn download_track(
 
     let cdn_url = CdnUrl::new(file).resolve_audio(&session).await?;
 
-    let resp = task::spawn_blocking(move || -> Result<Response> { Ok(ureq::get(cdn_url.try_get_url()?).call()?) }).await??;
+    let resp = task::spawn_blocking(move || -> Result<Response> {
+        Ok(ureq::get(cdn_url.try_get_url()?).call()?)
+    })
+    .await??;
 
     // let content_range = resp
     //     .header("content-range")
@@ -233,7 +236,10 @@ async fn download_track(
     // let slash_index = content_range.find('/').unwrap_or_default();
     // let upper_bound: usize = content_range[hyphen_index + 1..slash_index].parse()?;
     // let size = content_range[slash_index + 1..].parse()?;
-    let size = resp.header("content-length").ok_or_eyre("spotify cdn response didn't include content-length header")?.parse()?;
+    let size = resp
+        .header("content-length")
+        .ok_or_eyre("spotify cdn response didn't include content-length header")?
+        .parse()?;
 
     let download_pb = ProgressBar::new(size);
     download_pb.set_style(pb_style);
