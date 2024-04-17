@@ -3,7 +3,7 @@ use std::{
     collections::HashMap,
     ffi::OsString,
     fs,
-    io::{self, ErrorKind, Seek},
+    io::{self, ErrorKind, Read, Seek},
     path::Path,
     process::{Command, Stdio},
     sync::Arc,
@@ -26,6 +26,7 @@ use tokio::{
     io::AsyncWriteExt,
     task,
 };
+use ureq::Response;
 
 use crate::{
     cli::Args,
@@ -81,29 +82,28 @@ pub async fn download(
         profile_ffargs.push(Template::compile(arg)?);
     }
 
-    let style_int = ProgressStyle::with_template(
+    let pbstyle_int = ProgressStyle::with_template(
         "{spinner:.green} [{bar:40.blue}] {pos}/{len} {wide_msg:.green}",
     )
     .unwrap()
     .progress_chars("-> ");
 
-    let style_data = ProgressStyle::with_template(
+    let pbstyle_data = ProgressStyle::with_template(
         "{spinner:.green} [{bar:40.blue}] {bytes}/{total_bytes} {bytes_per_sec} {wide_msg:.green}",
     )
     .unwrap()
     .progress_chars("-> ");
 
     let metadata_pb = ProgressBar::new(0);
-    metadata_pb.set_style(style_int.clone());
+    metadata_pb.set_style(pbstyle_int.clone());
     metadata_pb.set_message("Resolving track metadata");
 
     let tracks = resolve::resolve_tracks(resource_type, resource_id, &session, metadata_pb).await?;
 
     let track_count = tracks.len();
-    let seq_digits = track_count.to_string().len();
+    let seq_max_digits = track_count.to_string().len();
 
     let ffpath = Arc::new(OsString::from(&cfg.ffpath));
-    let spclient = session.spclient();
 
     let mut errors = Vec::new();
     let mut skipped = 0;
@@ -118,11 +118,10 @@ pub async fn download(
             cli.skip_existing,
             &profile,
             seq + 1,
-            seq_digits,
+            seq_max_digits,
             allowed_formats,
-            style_data.clone(),
+            pbstyle_data.clone(),
             ffpath.clone(),
-            spclient,
             track_count,
             &profile_ffargs,
             cli.external_cover_art.as_deref(),
@@ -164,11 +163,10 @@ async fn download_track(
     skip_existing: bool,
     profile: &EncodingProfile,
     seq: usize,
-    seq_digits: usize,
+    seq_max_digits: usize,
     allowed_formats: &[AudioFileFormat],
-    style_data: ProgressStyle,
+    pb_style: ProgressStyle,
     ffpath: Arc<OsString>,
-    spclient: &SpClient,
     track_count: usize,
     profile_ffargs: &[Template],
     external_cover_art: Option<&str>,
@@ -187,7 +185,7 @@ async fn download_track(
         title: track.name.into(),
         album: track.album.name.into(),
         seq,
-        seq_digits,
+        seq_digits: seq_max_digits,
         track: track.number,
         disc: track.disc_number,
         language: track.language_of_performance.join(", ").into(),
@@ -226,23 +224,21 @@ async fn download_track(
 
     let cdn_url = CdnUrl::new(file).resolve_audio(&session).await?;
 
-    // fire a http request to cdn_url with ureq
+    let resp = task::spawn_blocking(move || -> Result<Response> { Ok(ureq::get(cdn_url.try_get_url()?).call()?) }).await??;
 
-    // parse content-range to get the file size
-    let content_range = response
-        .headers()
-        .get("content-range")
-        .ok_or_eyre("spotify cdn response didn't include content-range header")?;
-    let str_value = content_range.to_str()?;
-    let hyphen_index = str_value.find('-').unwrap_or_default();
-    let slash_index = str_value.find('/').unwrap_or_default();
-    let upper_bound: usize = str_value[hyphen_index + 1..slash_index].parse()?;
-    let size = str_value[slash_index + 1..].parse()?;
+    // let content_range = resp
+    //     .header("content-range")
+    //     .ok_or_eyre("spotify cdn response didn't include content-range header")?;
+    // let hyphen_index = content_range.find('-').unwrap_or_default();
+    // let slash_index = content_range.find('/').unwrap_or_default();
+    // let upper_bound: usize = content_range[hyphen_index + 1..slash_index].parse()?;
+    // let size = content_range[slash_index + 1..].parse()?;
+    let size = resp.header("content-length").ok_or_eyre("spotify cdn response didn't include content-length header")?.parse()?;
 
     let download_pb = ProgressBar::new(size);
-    download_pb.set_style(style_data);
+    download_pb.set_style(pb_style);
 
-    let mut raw_stream = AudioDecrypt::new(Some(key), response);
+    let mut raw_stream = AudioDecrypt::new(Some(key), resp.into_reader());
 
     let mut ffargs: Vec<Cow<'static, str>> = vec![
         "-y".into(),
@@ -257,6 +253,7 @@ async fn download_track(
     let mut _cover = None;
 
     // TODO: check if this can be de-duplicated
+    let spclient = session.spclient();
     if !covers.is_empty() {
         if profile.cover_art {
             download_pb.set_message(format!(
@@ -314,7 +311,8 @@ async fn download_track(
             .spawn()?;
         let mut stdin = ffmpeg.stdin.take().unwrap();
 
-        raw_stream.seek(io::SeekFrom::Start(167))?;
+        let mut garbage = [0u8; 167];
+        raw_stream.read_exact(&mut garbage)?;
         io::copy(&mut raw_stream, &mut stdin)?;
 
         drop(stdin);
