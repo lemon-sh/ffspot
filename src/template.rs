@@ -32,18 +32,18 @@ pub struct Fields<'a> {
 }
 
 impl<'a> Fields<'a> {
-    pub fn sanitize(&'a self) -> Self {
+    pub fn sanitize_path(&'a self) -> Self {
         Fields {
-            artists: sanitize_string(&self.artists),
-            title: sanitize_string(&self.title),
-            album: sanitize_string(&self.album),
+            artists: sanitize_path(&self.artists),
+            title: sanitize_path(&self.title),
+            album: sanitize_path(&self.album),
             seq: self.seq,
             seq_digits: self.seq_digits,
             track: self.track,
             disc: self.disc,
-            language: sanitize_string(&self.language),
+            language: sanitize_path(&self.language),
             year: self.year,
-            publisher: sanitize_string(&self.publisher),
+            publisher: sanitize_path(&self.publisher),
         }
     }
 }
@@ -66,11 +66,11 @@ fn sanitize_pattern(c: char) -> bool {
         || c == '|'
 }
 
-fn sanitize_string(string: &str) -> Cow<'_, str> {
-    if string.contains(sanitize_pattern) {
-        string.replace(sanitize_pattern, " ").into()
+fn sanitize_path(path: &str) -> Cow<'_, str> {
+    if path.contains(sanitize_pattern) {
+        path.replace(sanitize_pattern, " ").into()
     } else {
-        string.into()
+        path.into()
     }
 }
 

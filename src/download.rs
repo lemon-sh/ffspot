@@ -193,7 +193,7 @@ async fn download_track(
         publisher: track.album.label.into(),
     };
 
-    let mut path_string = path_template.resolve(&template_fields.sanitize())?;
+    let mut path_string = path_template.resolve(&template_fields.sanitize_path())?;
     if let Some(max_len) = cfg.max_filename_len {
         path_string.truncate(max_len);
     }
