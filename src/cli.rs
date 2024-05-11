@@ -19,6 +19,6 @@ pub struct Args {
     #[arg(short = 'c', long)]
     pub external_cover_art: Option<String>,
 
-    /// Spotify URI/URL or the resource that you want to download (track, album, playlist, etc.)
+    /// Spotify URI/URL of the resource that you want to download (track, album, playlist, etc.)
     pub resource: String,
 }
